@@ -1,0 +1,171 @@
+---
+title: 'Interpretation of Multiple Regression Coefficients: Output'
+author: "Brooke Coneeny"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$\textit{The data and code for this lecture can be found at my github: @brooke-coneeny}$
+
+```{r libraries, echo = FALSE, message = FALSE}
+# Import Libraries 
+library(tidyverse)
+```
+
+```{r data, echo = FALSE, message = FALSE}
+# Load in data 
+coin_data <- read.delim("coindata.txt")
+SAT_data <- read_csv("SAT_data.csv")
+```
+
+```{r explore data, echo = FALSE, message = FALSE, out.height = '50%', out.width = '50%', fig.align = "center"}
+pennies_and_value <- coin_data %>%
+  ggplot(aes(x = X..of.pennies, y = value.in.cents)) +
+  geom_point() +
+  geom_smooth(method='lm', formula= y~x) +
+  theme_bw() +
+  labs(
+    title = "Coin-Handful Distribution",
+    x = "Number of Pennies",
+    y = "Total Value"
+  )
+
+num_and_value <- coin_data %>%
+  ggplot(aes(x = X..of.coins, y = value.in.cents)) +
+  geom_point() +
+  geom_smooth(method='lm', formula= y~x) + 
+  theme_bw() +
+  labs(
+    title = "Coin-Handful Distribution",
+    x = "Number of Coins",
+    y = "Total Value"
+  )
+  
+pennies_and_value
+num_and_value
+```
+
+```{r step1, message = FALSE}
+#Fitting a simple regression of value in cents on number of coins 
+model1 <- lm(value.in.cents ~ X..of.coins, data = coin_data)
+#Saving the residuals of the above model
+model1_resids <- resid(model1) 
+#Adding these residuals to the data set 
+coin_data <- coin_data %>% cbind(model1_resids)
+
+#Fitting a simple regression of number of pennies on number of coins 
+model2 <- lm(X..of.pennies ~ X..of.coins, data = coin_data)
+#Saving the residuals of the above model 
+model2_resids <- resid(model2)
+#Adding these residuals to the data set 
+coin_data <- coin_data %>% cbind(model2_resids)
+
+#Fitting a simple regression of the first set of residuals on the second set of residuals 
+model3 <- lm(model1_resids ~ model2_resids, data = coin_data) 
+#This is the multiple regression 
+model4 <- lm(value.in.cents ~ X..of.pennies + X..of.coins, data = coin_data)
+#This is the simple regression of x1 on y 
+model5 <- lm(value.in.cents ~ X..of.pennies, data = coin_data)
+
+summary(model3)
+summary(model4)
+summary(model5)
+```
+
+```{r SAT, message = FALSE, out.height = '50%', out.width = '50%', fig.align = "center"}
+initial_plot <- SAT_data %>%
+  ggplot(aes(x = expenditure, y = Combined_SAT)) +
+  geom_point() +
+  geom_smooth(method = 'lm', formula = y ~ x) +
+  theme_bw() +
+  labs(
+    title = "Distribution of SAT Scores",
+    x = "Expenditure",
+    y = "Combined SAT Score"
+  )
+  
+initial_plot
+```
+
+```{r SAT_part2, message = FALSE}
+grouped_SAT_data <- SAT_data %>%
+  mutate(division = case_when(
+    Pct_Taking_SAT >= 50 ~ "upper",
+    Pct_Taking_SAT < 50 ~ "lower"
+  ))
+```
+
+```{r SAT_part3, message = FALSE, out.height = '50%', out.width = '50%', fig.align = "center"}
+upper_plot <- grouped_SAT_data %>%
+  filter(division == "upper") %>%
+  ggplot(aes(x = expenditure, y = Combined_SAT)) +
+  geom_point() +
+  geom_smooth(method = 'lm', formula = y ~ x) +
+  theme_bw() +
+  labs(
+    title = "Distribution of SAT Scores",
+    subtitle = "Specifically for states with >=50% students testing",
+    x = "Expenditure",
+    y = "Combined SAT Score"
+  )
+
+lower_plot <- grouped_SAT_data %>%
+  filter(division == "lower") %>%
+  ggplot(aes(x = expenditure, y = Combined_SAT)) +
+  geom_point() +
+  geom_smooth(method = 'lm', formula = y ~ x) +
+  theme_bw() +
+  labs(
+    title = "Distribution of SAT Scores",
+    subtitle = "Specifically for states with <50% students testing",
+    x = "Expenditure",
+    y = "Combined SAT Score"
+  )
+
+upper_plot
+lower_plot
+```
+
+```{r estimate, message = FALSE}
+#Using the coin data once again
+#X1 column vector is the column containing number of pennies in each handful
+#X2 column vector is the column containing number of coins in each handful 
+#Y column vector is the column containing the value of each handful 
+X1 <- coin_data$X..of.pennies
+X2 <- coin_data$X..of.coins 
+Y <- coin_data$value.in.cents
+
+#Creating (nxp) X matrix
+X <- cbind(1,X1,X2)
+
+#Finding the inverse of X-transpose times X
+Xinv <- solve(t(X) %*% X)
+
+#Multiplying the above by X-transpose and Y to get beta-hat
+bhat <- Xinv %*% t(X) %*% Y
+bhat
+```
+
+```{r estimate2, message = FALSE}
+#Finding the predicted y values using the predicted beta from above
+yhat <- X %*% bhat 
+
+#Finding the residuals 
+resids <- Y - yhat
+
+#Finding the number of observations 
+n <- nrow(coin_data)
+
+#Finding the estimate of sigma 
+rmse <- sqrt(sum(resids^2)/(n-3))
+rmse
+```
+
+```{r estimate3, message = FALSE}
+#Finding the standard error 
+SE <- rmse * sqrt(diag(Xinv))
+SE
+```

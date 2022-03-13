@@ -1,0 +1,51 @@
+State,Combined_SAT,Verbal_SAT,expenditure,Pct_Taking_SAT
+Alabama     ,1029,491,4.405,8
+Alaska      ,934,445,8.963,47
+Arizona   ,944,448,4.778,27
+Arkansas  ,1005,482,4.459,6
+California ,902,417,4.992,45
+Colorado     ,980,462,5.443,29
+Connecticut,908,431,8.817,81
+Delaware        ,897,429,7.03,68
+Florida         ,889,420,5.718,48
+Georgia        ,854,406,5.193,65
+Hawaii         ,889,407,6.078,57
+Idaho       ,979,468,4.21,15
+Illinois     ,1048,488,6.136,13
+Indiana       ,882,415,5.826,58
+Iowa          ,1099,516,5.483,5
+Kansas        ,1060,503,5.817,9
+Kentucky    ,999,477,5.217,11
+Louisiana  ,1021,486,4.761,9
+Maine           ,896,427,6.428,68
+Maryland,909,430,7.245,64
+Massachusetts ,907,430,7.287,80
+Michigan      ,1033,484,6.994,11
+Minnesota      ,1085,506,6,9
+Mississippi     ,1036,496,4.08,4
+Missouri       ,1045,495,5.383,9
+Montana    ,1009,473,5.692,21
+Nebraska      ,1050,494,5.935,9
+Nevada          ,917,434,5.16,30
+New Hampshire ,935,444,5.859,70
+New Jersey     ,898,420,9.774,70
+New Mexico   ,1015,485,4.586,11
+New York     ,892,419,9.623,74
+North Carolina,865,411,5.077,60
+North Dakota  ,1107,515,4.775,5
+Ohio           ,975,460,6.162,23
+Oklahoma  ,1027,491,4.845,9
+Oregon           ,947,448,6.436,51
+Pennsylvania    ,880,419,7.109,70
+Rhode Island  ,888,425,7.469,70
+South Carolina,844,401,4.797,58
+South Dakota ,1068,505,4.775,5
+Tennessee     ,1040,497,4.388,12
+Texas         ,893,419,5.222,47
+Utah           ,1076,513,3.656,4
+Vermont     ,901,429,6.75,68
+Virginia        ,896,428,5.327,65
+Washington  ,937,443,5.906,48
+West Virginia ,932,448,6.107,17
+Wisconsin   ,1073,501,6.93,9
+Wyoming       ,1001,476,6.16,10
