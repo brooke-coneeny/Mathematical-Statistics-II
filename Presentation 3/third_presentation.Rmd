@@ -1,7 +1,9 @@
 ---
 title: "Multiple Comparisons"
 author: "Brooke Coneeny"
-output: pdf_document
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -20,34 +22,69 @@ library(tidyverse)
 
 # Familywise Error Rate 
 
-When completing a statistical test, we have a null hypothesis which we decide to either reject or accept based off of our observed data. A $\textit{Type 1 Error}$ occurs when $H_{0}$ is actually true but we rejected it. In some cases, we have multiple individual hypotheses which gives us a $\textit{Family-wise error rate (FWER)}$, the probability of making any Type 1 errors at all.
+When completing a statistical test, we have a null hypothesis which we decide to either reject or accept based off of our observed data. A $\textit{Type 1 Error}$ occurs when $H_{0}$ is actually true but we rejected it. In the cases of multiple comparisons, we have multiple individual hypotheses which leads us towards a $\textit{Family-wise error rate (FWER)}$, which is the probability of making any Type 1 errors. FWER = P(at least one of $H_{01}$,...,$H_{0k}$ is falsely rejected). 
+
+Similarly, a 95% confidence level interval $(L,U)$ for a parameter $\theta$ may fail to cover $\theta$ 5% of the time. Constructing multiple 95% confidence intervals ${(L_1 , U_1),...(L_k , U_k)}$ for multiple different parameters $\theta_1, ..., \theta_k$, the chance at least one of the intervals fails to include the parameter is greater than 5%. 
 
 P(Making an error) $= \alpha$
 P(Not making an error) $= 1 - \alpha$
 P(Not making an error in k tests) $= (1 - \alpha)^k$
 P(Making at least 1 error in k tests) $= 1 - (1 - \alpha)^k$
 
-However, because there is a larger number of tests being performed, it is easier to find these type 1 errors and get high FWER values. Two well known methods to combat this issue are the Bonferroni Method and Holm-Bonferroni method. 
+For example, before a presidential election, polls are conducted in all 50 states and 95% confidence intervals are reported for the proportion of people in each state who favor the incumbent candidate. 
 
+A question we may ask ourselves is: what is the probability that at least one of these intervals fails to contain the true proportion? This is asking what the familywise error rate is for this situation. 
+
+FWER = $1 - (1-0.05)^{50}$ = 0.923
+
+This is a relatively high chance that at least one of our intervals will fail to contain the true proportion. Another question we may ask ourselves is: What level is $\alpha$ should be used to have a FWER of 0.05? This is the same as asking: What level $\alpha$ should be used to have the probability of making no errors 0.95?
+
+$(1-\alpha)^{50} = 0.95$ solving for $\alpha$ we get that $\alpha = 0.00102$. This value for $\alpha$ is much smaller than our original value of 0.05 
 
 # K means tests
-A simple hypothesis test compares the means of $k = 2$ means. To complete this we use a simple t-test. However, increasing k creates a more complex problem because of the increase in type 1 error that occurs. As we showed above, the FWER is equal to $1 - (1 - \alpha)^k$, which is why as k increases the FWER also increases. 
+A simple hypothesis test compares the means of $k = 2$ means. To complete this we use a simple t-test. However, increasing k creates a more complex problem because of the increase in type 1 error that occurs. As we showed above, the FWER is equal to $1 - (1 - \alpha)^k$, which is why as k increases the FWER also increases. To complete this multiple mean comparison test, we use an ANOVA F-test. 
+
+For an experiment with $k$ treatments, there are 
++ ${g \choose 2} = \frac{r(r-1)}{2}$ pairwise comparisons to make
++ numerous contrasts 
+
+Because there is a larger number of tests being performed, it is easier to find these type 1 errors and get high FWER values. Two well known methods to combat this issue are the Bonferroni Method and Holm-Bonferroni method. 
 
 # Bonferroni Method
-The Bonferroni method guarantees $FWER \leq \alpha$ by decreasing the level for all the individual tests to $\alpha / n$.
+The Bonferroni method guarantees $FWER \leq \alpha$ by decreasing the level for all the individual tests to $\alpha / n$. Therefore we reject hypotheses only when $p_i < \alpha / k$.
 
 P(any Type 1 error) $\leq \sum_{i=1}^{n}$ P(Type 1 error for test i) $\leq \sum_{i=1}^{n} \frac{\alpha}{n} = \alpha$
 
 + works even if the test statistics are not independent
-+ very conservative if $\textit{n}$ is large 
++ rejects a null if the comparionswise p-value is less than $\alpha / k$
++ Works OK when $k$ is small, very conservative if $\textit{n}$ is large 
++ Ideal when interested in a smaller number of planned contrasts or pairwise comparisons
 
 # Holm-Bonferroni Method
-Holm suggests that we sort the tests in order of their obtained p-values. The tests are ordered from the one with the smallest p-value to the one with the largest. The test with the lowest probability is tested first with the Bonferroni method for a family of $C$ tests. If the test is not significant, then the procedure stops. The second test is then tested with the Bonferroni method but for a family of $(C-1)$ tests. This process continues until a non-significant test is obtained or when all the tests have been performed
+The Bonferroni correction can be overly conservative, and there are other tests with more power such as the Holm-Bonferroni Method. Holm-Bonferroni suggests that we sort the tests in order of their obtained p-values. 
 
-+ This is a much more powerful approach the Bonferroni
+This method can be thought out as an algorithm:
+1. Sort the $p$-values into increasing order, label these $p_1,...p_k$ and denote the corresponding null hypotheses as $H_0^(1), ..., H_0^(k)$
+2. Let $m$ be the smallest index such that $p_m > \alpha / (k-m+1)$. If no such $m$ exists, then reject all hypotheses. If $m = 1$, then do not reject any hypothesis. 
+3. Otherwise, reject the null hypotheses $H_0^(1),...,H_0^(m-1)$ and accept the null hypotheses $H_0^(m), H_0^(m+1), ..., H_0^(k)$. 
+
+# Example Problem 
+Supposed we have 5 different hypothesis tests with p-values of: Test 1 (p = 0.07), Test 2 (p = 0.002), Test 3 (p= 0.011), Test 4 (p = 0.003), and Test 5 (p = 0.04)
+
+### Using Bonferroni
+Which tests should be accepted or rejected when the FWER is $\alpha = 0.05$?
++ Since there are five tests, the Bonferroni correct states that a hypothesis can be rejected if $p < \alpha / 5 = 0.05/5 = 0.01$. Therefore, tests 2 and 4 should be rejected, while tests 1,3 and 5 should be accepted. 
+
+### Using Holm-Bonferroni
+Which tests should be accepted or rejected when the FWER is $\alpha = 0.05$?
++ Start by arranging the p-values in increasing order: 0.002, 0.003, 0.011, 0.04, 0.07
++ Need to determine the small $k$ such that the $k$-th $p$-value in the list is greater than $Q_k = \alpha / (5+1-k)$
++ The rounded values of $Q_k$'s are: 0.01, 0.0125, 0.017, 0.025, 0.05
++ The smallest k is $k = 4$ because $p_4 = 0.04 > 0.025$
++ We reject the hypotheses corresponding to the first three $p$-values in the ordered list and accept the remaining. Therefore Tests 2,3, and 4 are rejected and Tests 1 and 5 are accepted
 
 # Boole's Inequality 
-Boole's inquality states that for a collection of countable events, the probability that at least one of the events happens is no greater than the sum of the probabilities of the events in the collection
+Boole's inequality states that for a collection of countable events, the probability that at least one of the events happens is no greater than the sum of the probabilities of the events in the collection
 
 ### Proof (using induction):
 For n=1:
@@ -76,19 +113,156 @@ One of the most basic statistical computations is using observed averages to pre
 
 Let us consider a sample of 45 major league baseball players, each with a batting average between 0 and 1. 
 
-The first step in Stein's method is to calculate the average of averages, $\bar y$. We then 'shrink' all the individual averages towards this overall average; reducing players who are hitting above and increasing players that are hitting below. This shrunken average can be denoted for each player as $\hat\theta_i = \bar y + c(y-\bar y)$ or as $\hat\theta_i - \hat\beta \bar y + (1-\hat\beta)y_i$ for $i = 1,..k$. $y_i$ is the observed average for an individual, $\bar y$ is the average of the $y_i$'s, and $\hat \beta$ is a value between 0 and 1 estimated from data. $c = 1 - \hat \beta$. 
+The first step in Stein's method is to calculate the average of averages, $\bar y$. We then 'shrink' all the individual averages towards this overall average; reducing players who are hitting above and increasing players that are hitting below. This shrunken average can be denoted for each player as $\hat\theta_i = \bar y + c(y_{i}-\bar y)$ or as $\hat\theta_i = \hat\beta \bar y + (1-\hat\beta)y_i$ for $i = 1,..k$. $y_i$ is the observed average for an individual, $\bar y$ is the average of the $y_i$'s, and $\hat \beta$ is a value between 0 and 1 estimated from data. $c = 1 - \hat \beta$. 
 
 If $\hat \beta = 1$ then all of the $\theta_i$'s are estimated by their $\bar y$ values. This would occur if all of the $y_i$'s were very close to each other. 
 
-The quantity $(y - \bar y)$ is the amount which the player's average differs from the overall average. Therefor this equation says that the estimator ($z$) differs from the overall average by $c(y - \bar y)$, where $c = 1 - \frac{(k-3)\sigma ^2}{\sum(y - \bar y)^2}$, is the shrinking factor. 
+The quantity $(y_{i} - \bar y)$ is the amount which the player's average differs from the overall average. Therefor this equation says that the estimator ($\hat \theta_i$) differs from the overall average by $c(y_{i} - \bar y)$, where $c = 1 - \frac{(k-3)\sigma ^2}{\sum(y - \bar y)^2}$, is the shrinking factor. 
 
-In our example, $\bar y = 0.265$, $c = 0.212$ and $\hat \beta = 0.7884$. Therefore $\hat\theta_i = 0.265 + 0.212(y - 0.265)$ or $\hat\theta_i = 0.7884(0.265) + (1-0.7884)y_i$. If a player in this sample was hitting 0.400, the Stein theorem would say that his true batting ability can be better estimated as $\hat\theta_i = 0.265 + 0.212(0.400 - 0.265) = 0.294$ or $\hat\theta_i = 0.788(0.265) + 0.212(0.400) = 0.294$. 
+In our example, $\bar y = 0.265$, $c = 0.212$ and $\hat \beta = 0.7884$. Therefore $\hat\theta_i = 0.265 + 0.212(y_{i} - 0.265)$ or $\hat\theta_i = 0.7884(0.265) + (1-0.7884)y_i$. If a player in this sample was hitting 0.400, the Stein theorem would say that his true batting ability can be better estimated as $\hat\theta_i = 0.265 + 0.212(0.400 - 0.265) = 0.294$ or $\hat\theta_i = 0.788(0.265) + 0.212(0.400) = 0.294$. 
 
-The true average of a batter can be designated as $\theta$. To compare our estimators, $y$ and $z$, we can calculate the total squared error, given by the sum of $(\theta - y_i)^2$ and $(\theta- z_i)^2$ for each player i. In our sample data, the total squared error for $y = 0.077$ whereas Stein's estimate has an error of $0.022$. This would imply that the Stein estimate is much more accurate, especially in the case that the true means lie near each other.  
+The true average of a batter can be designated as $\theta$. To compare $\theta$ to our estimators we can calculate the total squared error, given by $\sum_{i=1}^{n}(\theta - \hat\theta_i)^2$ for each player i. In our sample data, the total squared error using $y_{i}$'s is $0.077$ whereas Stein's estimates give an error of $0.022$. This would imply that the Stein estimate is much more accurate.
 
 Stein shows us through this paradox that when the number of means is greater than two, estimating each of them by their own average is an inadmissible procedure for no matter the value of the true means, there are estimations with smaller risk, such as the Stein estimate, which produces a smaller sum of squared error than using the $k$ averages. 
 
+## Stein's Paradox Simulation 
+
+We will first go through the simulation where $k=3$. We are going to us $\hat \beta = \frac{(k-2)V}{\sum y_{i}^2}$ and $\hat \theta_i = (1-\hat \beta)y_i$ (shrinking towards 0)
+
+```{r simulation1, eval = FALSE}
+#Set 3 theta values and pick a known value for V
+theta = c(0,1,2)
+V=1
+K=3
+
+#Approximate expectation of the sum of squares 
+#Do this by averaging the observed sum of squares
+#For a large number of simulated Y1,Y2,Y3 values
+#Using the given theta's as mean values
+nsim = 100000
+
+#Create sums of squares using Yi's and using stein estimate 
+ss0 = ss1 = rep(0,nsim)
+
+#Conduct nsim simulations
+for(iter in 1:nsim){
+  #Generate y|theta,V ~ N(theta,V)
+  y =theta +  sqrt(V)*rnorm(K)
+  #y is a k-vector, with E(yi)=thetai, i=1,..,k
+  #Save sum of squares for yi's
+  ss0[iter]=sum((y-theta)^2)
+  #Compute james-stein estimates 
+  #k=3 so shrink towars mu = 0
+  Bhat = (K-2)*V/sum(y^2)
+  thetahat = Bhat*0 + (1-Bhat)*y
+  #Store sum of squares for thetahats
+  ss1[iter] = sum((thetahat - theta)^2)
+  #Print out every 1000th iteration
+  if(iter/1000 == round(iter/1000)) cat(iter,", ")
+}
+
+#Compare average sum of squares values 
+mean(ss0); mean(ss1)
+
+#Compute ratio: ss1 should be smaller, so ratio should always be >1
+mean(ss0)/mean(ss1)
+```
+
+We get a ratio of 1.09 with theta = c(0,1,2) meaning the expected sum of squares using the $y_{i}$'s is about 9% larger than using the Stein estimate and shrinking towards $\mu$ = 0
+
+Now lets look at the k = 4 example.We are going to us $\hat \beta = \frac{(k-3)V}{\sum ((y_{i} - \bar y)^2)}$ and $\hat \theta_i = \hat \beta \bar y + (1-\hat \beta)y_i$  
+
+There is not much improvement in small k problems and there is less improvement for more variable $y_{i}$'s are relative to V and the further the $\theta_{i}$'s are from the assumed value $\mu$ but it should always show some improvement, no matter the $y_{i}$'s
+
+```{r simulation2, eval = FALSE}
+#Set 4 theta values and pick a known value for V
+theta = c(-1,0,1,2)
+V=1
+K=4
+
+#Approximate expectation of the sum of squares 
+#Do this by averaging the observed sum of squares
+#For a large number of simulated Y1,Y2,Y3,Y4 values
+#Using the given theta's as mean values
+nsim = 100000
+
+#Create sums of squares using Yi's and using stein estimate 
+ss0 = ss1 = rep(0,nsim)
+
+#Conduct nsim simulations
+for(iter in 1:nsim){
+  #Generate y|theta,V ~ N(theta,V)
+  y = theta + sqrt(V)*rnorm(K)
+  #y is a k-vector, with E(yi)=thetai, i=1,..,k
+  #Save sum of squares for yi's
+  ss0[iter]=sum((y-theta)^2)
+  #Compute james-stein estimates 
+  ybar = mean(y)
+  Bhat = (K-3)*V/sum((y-ybar)^2)
+  thetahat = Bhat*ybar + (1-Bhat)*y
+  #Store sum of squares for thetahats
+  ss1[iter] = sum((thetahat - theta)^2)
+  #Print out every 1000th iteration
+  if(iter/1000 == round(iter/1000)) cat(iter,", ")
+}
+
+#Compare average sum of squares values 
+mean(ss0); mean(ss1)
+
+#Compute ratio: ss1 should be smaller, so ratio should always be >1
+mean(ss0)/mean(ss1)
+```
+
+In this example we got a ratio of 1.07, which means the expected sum of squares using the $y_{i}$'s is about 7% larger than using the Stein estimate
+
+```{r simulation3, eval = FALSE}
+#Set 4 theta values and pick a known value for V
+theta = c(71.3,70.7,72.8,70.1)
+V=6.0/5
+K=4
+
+#Approximate expectation of the sum of squares 
+#Do this by averaging the observed sum of squares
+#For a large number of simulated Y1,Y2,Y3,Y4 values
+#Using the given theta's as mean values
+nsim = 100000
+
+#Create sums of squares using Yi's and using stein estimate 
+ss0 = ss1 = rep(0,nsim)
+
+#Conduct nsim simulations
+for(iter in 1:nsim){
+  #Generate y|theta,V ~ N(theta,V)
+  y = theta + sqrt(V)*rnorm(K)
+  #y is a k-vector, with E(yi)=thetai, i=1,..,k
+  #Save sum of squares for yi's
+  ss0[iter]=sum((y-theta)^2)
+  #Compute james-stein estimates 
+  ybar = mean(y)
+  Bhat = (K-3)*V/sum((y-ybar)^2)
+  thetahat = Bhat*ybar + (1-Bhat)*y
+  #Store sum of squares for thetahats
+  ss1[iter] = sum((thetahat - theta)^2)
+  #Print out every 1000th iteration
+  if(iter/1000 == round(iter/1000)) cat(iter,", ")
+}
+
+#Compare average sum of squares values 
+mean(ss0); mean(ss1)
+
+#Compute ratio: ss1 should be smaller, so ratio should always be >1
+mean(ss0)/mean(ss1)
+```
+
+In this example we got a ratio of 1.1, which means the expected sum of squares using the $y_{i}$'s is about 10% larger than using the Stein estimate
+
 # Sources
 https://statweb.stanford.edu/~joftius/slides/testing.pdf
+
+http://www.stat.uchicago.edu/~yibi/teaching/stat222/2017/Lectures/C05.pdf
+
+http://courses.ieor.berkeley.edu/ieor165/lecture_notes/ieor165_lec19.pdf
+
 Efrom & Morris 1977: Stein's Paradox 
+
 Everson - Steins Paradox 
