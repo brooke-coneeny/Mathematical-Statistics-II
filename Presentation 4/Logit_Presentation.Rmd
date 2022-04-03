@@ -1,0 +1,157 @@
+---
+title: "Logistic Regression Inference"
+author: "Brooke Coneeny"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, echo = FALSE, message = FALSE}
+# Import Libraries 
+library(tidyverse)
+```
+
+```{r data, echo = FALSE, message = FALSE}
+# Load in data 
+footballdata <- read.table("NFL2010.txt", head = T, sep = ",")
+```
+
+# Logistic Model Assumptions 
+
+## Assumption 1: Appropriate Outcome Type
+Logistic regression is an appropriate model to use when the dependent variable is a binary output (1 or 0) which is equivalent to 'yes' or 'no'. If the dependent variable has more than 2 outcomes, a multinomial or ordinal logistic regression is more appropriate. 
+
+### Check
+We can check for this assumption in our dataset by calculating the number of unique outcomes 
+
+## Assumption 2: Linearity of Indp var. & log-odds
+An important assumption for logistic regression is that the relationship between the logit (log-odds) of the outcome and each continuous independent variable is linear. 
+
+The logit is the logarithm of the odds ratio with p being the probability of a positive outcome (1)
+
+logit($p$) = $\log (\frac{p}{1-p})$
+
+### Check
+(1) Box-Tidwell Test: 
+- This test checks for the linearity between the predictors and the logit by adding log-transformed interaction terms between the continuous independent variables and their corresponding natural log into the model.
+- We then check the statistical significance of the interaction terms based on their p-values. 
+- If an interaction term has a p-value above a chosen alpha, it implies that the independent variable is linearly related to the logit of the outcome variable and the assumption is satisified. 
+- If an interaction term has a p-value below a chosen alpha, meaning it is significant, than there is evidence of non-linearity between the variable and the logit. 
+
+(2) Visual Check:
+We can also check logit linearity visually by creating a scatter plot between each predictor and the logit values. 
+
+## Assumption 3: No Strongly Influential Outliers
+Logistic regression assumes that there are no very influential outlier data points. The presence of these points can change the outcome and accuracy of your model. 
+
+### Check
+(1) The influence of points can be checked by using their Cook's Distance. The Cook's Distance uses the residual and leverage value of a point to summarize the changes in the regression model when that particular observation is removed. 
+- There are many different cut-off values that are used when deciding which points to classify as influential. A standard threshold is 4/N, where N = number of observations. This means observations with Cook's Distnace > 4/N are considered to be influential. 
+
+(2) To determine if a point is an outlier, it standard practice to use the standardized residuals. Data points with an absolute standardized residual value greater than 3 is possibly an extreme outlier 
+
+## Assumption 4: Absence of Multicollinearity
+Multicollinearity is when the data contains highly correlated independent variables. This can become problematic because it reduces the accuracy of the estimated coefficients which then weakens the models statistical power 
+
+### Check
+The Variance Inflation Factor (VIF) measures the degree of multicollinearity in a dataset. The VIF is equal to the ratio of the overall model variance to the variance of a model that includes only that sinlge independent variable. 
+- The smallest possible VIF value is 1, meaning there is a complete absence of collinearity between variables
+- A common rule of thumb, a VIF greater than 5 indicates problematic amount of multicollinearity 
+
+## Assumption 5: Independence of Observations 
+The observations in the dataset must all be independent of each other; meaning they should not come from repeated or paired data. This ensures that each observation is not influenced or related to the others. 
+
+### Assumption 6: Sufficientyl Large Sample Size
+In order to avoid overfitting the model, there should be a sufficiently large amount of observations for each independent variable
+
+# Fitting Models 
+
+We are going to fit two simple logistic regression models. The first will fit y = Home.win on Vegas.H.R 
+
+```{r model1, echo = FALSE, warning = FALSE}
+modeldata <- footballdata %>%
+  mutate(response1 = case_when(
+    Home.win == "home win" ~ 1,
+    Home.win == "road win" ~ 0
+  ))
+
+
+model1 <- glm(response1 ~ Vegas.H.R, data = modeldata)
+```
+
+
+The second regression will fit y = Home.win on Halftime.H.R
+
+```{r model2, echo = FALSE, warning = FALSE}
+model2 <- glm(response1 ~ Halftime.H.R, data = modeldata)
+```
+
+Let us quickly go through the assumptions: 
+(1) The outcome is appropriate, there are two choices
+(2) Linearity of independent variables and log-odds: plot passes for model 1 but not for model 2
+```{r model1_assumption}
+# get predicted values and log odds
+modeldata <- modeldata %>%
+  mutate(predicted_values = predict(model1)) %>%
+  mutate(log_odds = log(predicted_values/(1- predicted_values))) 
+
+assumption_plot <- modeldata %>%
+  ggplot(aes(x = Vegas.H.R, y = log_odds)) +
+  geom_point() 
+
+assumption_plot
+
+# get predicted values and log odds
+modeldata <- modeldata %>%
+  mutate(predicted_values2 = predict(model2)) %>%
+  mutate(log_odds_two = log(predicted_values2/(1- predicted_values2))) 
+
+assumption_plot2 <- modeldata %>%
+  ggplot(aes(x = Vegas.H.R, y = log_odds_two)) +
+  geom_point() 
+
+assumption_plot2
+```
+
+#########
+Explain how to compute the test statistic
+##########
+
+#########
+Explain how to compute the degrees of freedom 
+##########
+
+#########
+Explain how to compute the lack of fit tests
+##########
+
+#########
+Explain the results 
+##########
+
+# Sources
+https://towardsdatascience.com/assumptions-of-logistic-regression-clearly-explained-44d85a22b290
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
