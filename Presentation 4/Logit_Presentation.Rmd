@@ -78,15 +78,14 @@ modeldata <- footballdata %>%
   ))
 
 
-model1 <- glm(response1 ~ Vegas.H.R, data = modeldata)
+model1 <- glm(response1 ~ Vegas.H.R, data = modeldata, family = "binomial")
 summary(model1)
 ```
 
-
 The second regression will fit y = Home.win on Halftime.H.R
 
-```{r model2, echo = FALSE, warning = FALSE}
-model2 <- glm(response1 ~ Halftime.H.R, data = modeldata)
+```{r model_two, echo = FALSE, warning = FALSE}
+model2 <- glm(response1 ~ Halftime.H.R, data = modeldata,family = "binomial")
 summary(model2)
 ```
 
@@ -118,40 +117,37 @@ assumption_plot2 <- modeldata %>%
 assumption_plot2
 ```
 
-#########
-Explain how to compute the test statistic
 
+```{r model2, echo = FALSE, warning = FALSE}
+model3 <- glm(response1 ~ factor(Halftime.H.R), data = modeldata, family = "binomial")
+summary(model3)
 
+model4 <- glm(response1 ~ factor(Halftime.H.R), data = modeldata, family = "binomial")
+summary(model4)
+```
 
+# Computing the test statistic
 
-##########
+For model 1: 
+To compare our logistic model to our saturated model we are going to use the GLR test. The GLR test finds the difference between the max likelihood for the logistic model (which has two betas) and the saturated log-likelihood model (which has 41 betas). 
 
-#########
-Explain how to compute the degrees of freedom 
+max likelihood for logistic = -163.18141
+max likelihood for log-like = -134.3914
+The difference = 28.79
 
+Once we have this difference, we multiply it by negative 2 to get 57.58
+This statistic acts as a chi-squared distribution with degrees of freedom df = 41 - 2 = 39 
+The test statistic has a p-value of 0.0279, telling us it is significant at the alpha value of 0.05. Because it is significant this suggests that the logistic model may be incorrect 
 
+For model 2: 
+We are now going to do the same process except for the second model, which uses the half time score margin to predict the winner of the game. 
+max likelihood for logistic = -125.74107
+max likelihood for log-like = -110.34566
+The difference = 15.39541
 
-
-
-##########
-
-#########
-Explain how to compute the lack of fit tests
-
-
-
-
-
-##########
-
-#########
-Explain the results and what they imply 
-
-
-
-
-
-##########
+We then multiply this difference by negative 2 to get -30.79082
+This statistic acts as a chi-squared distribution with degrees of freedom df = 41 - 2 = 39
+The test statistic has a p-value of 0.8774 which is not statistically significant at the alpha = 0.05 level or even at the alpha = 0.1 level. This suggests that the logistic model is correct
 
 # Model Formula 
 
@@ -160,50 +156,38 @@ P($Y_i = 1$ | X) = $\frac{1}{1+e^{-(\beta_0 + \beta_1 X)}}$
 
 As for our specific examples from above:
 model 1: 
-P($y_i = 1$ | X) = $\frac{1}{1+e^{-(0.491364 + 0.028168(Vegas.H.R))}}$
-$y_i = 0.491364 + 0.028168(Vegas.H.R)$ 
-model 2: 
-P($y_i = 1$ | X) = $\frac{1}{1+e^{-(0.544794 + 0.025234(Halftime.H.R))}}$
-$y_i = 0.544794 + 0.025234(Halftime.H.R)$ 
+P($y_i = 1$ | X) = $\frac{1}{1+e^{-(-0.03457 + 0.12389(Vegas.H.R))}}$
 
+model 2: 
+P($y_i = 1$ | X) = $\frac{1}{1+e^{-(0.27694 + 0.16517(Halftime.H.R))}}$
+
+The plot below shows the probability curves of both models. The model which is predicted using the vegas odds is in black and the model which uses the halftime score margin is in blue. In the beginning the two are relatively consistent, but as we can see the using the halftime score allows us to better predict whether the home team wins. 
 ```{r probabilities}
 # make an empty graph with the correct limits 
 plot(0,0, xlim = c(-30,30), ylim = c(0,1), type = "n", xlab = "x (points)", ylab = "P(Y=1|x)")
 
 # add the two lines (change beta0 and beta1 to numbers from your fits) 
 # model 1
-lines(seq(-30,30,.1), 1/(1+exp(-(0.49136+0.02817*seq(-30,30,.1))))) 
-# model 2 
-lines(seq(-30,30,.1), 1/(1+exp(-(0.54479+0.02523*seq(-30,30,.1)))), col="blue")
+lines(seq(-30,30,.1), 1/(1+exp(-(-0.03457+0.12389*seq(-30,30,.1))))) 
+# model 2: uses half time
+lines(seq(-30,30,.1), 1/(1+exp(-(0.27694+0.16517*seq(-30,30,.1)))), col="blue")
 ```
 
 # Hypothesis Testing 
 
-####
-Carry out approximate tests of Ho: $\beta_0 = 0$ (based on standard errors) for model 1
+### Model 1
+First we are going to carry out approximate tests of Ho: $\beta_0 = 0$ (based on standard errors) for model 1. The estimates we are using become approximately normal because we are using the Maximum Likelihood Estimates. This means we can use an approximate z test for the model parameters. 
 
+Looking at the parameter estimate output for model 1, we can see the estimate for $\beta_0 = -0.03457$ and the standard error is 0.14223
 
+Our approximate z-statistic =$\frac{-0.03457}{0.14223} = -0.243$ which has a p-value of 0.808. This means the coefficient on $\beta_0$ for the first model is not significant and we cannot reject the null hypothesis which says $\beta_0$ is equal to 0.
 
-####
+### Model 2
+Now we are going to carry out approximate tests of Ho: $\beta_0 = 0$ (based on standard errors) for model 2. The estimates we are using become approximately normal because we are using the Maximum Likelihood Estimates. This means we can use an approximate z test for the model parameters. 
 
-####
-Carry out approximate tests of Ho: $\beta_0 = 0$ (based on standard errors) for model 2
+Looking at the parameter estimate output for model 1, we can see the estimate for $\beta_0 = 0.27694$ and the standard error is 0.1556258
 
-
-
-####
-
-####
-Explain what the null and alternative imply for model 1
-
-
-####
-
-####
-Explain what the null and alternative imply for model 2
-
-
-####
+Our approximate z-statistic =$\frac{0.27694}{0.15563} = 1.779$ which has a p-value of 0.0752. This means the coefficient on $\beta_0$ for the first model is significant at the alpha = 0.1 level. At this level we can reject the null hypothesis which says $\beta_0$ is equal to 0. 
 
 # Multiple Logisitic Regression 
 The above examples only include one explanatory variable, but now let us walk through an example with multiple variables. 
@@ -214,28 +198,40 @@ summary(model3)
 ```
 
 This results in the following model:
+P($Y_i = 1$ | X) = $\frac{1}{1+e^{-(\beta_0 + \beta_1 X_1 + \beta_2 X_2)}}$
+
 $y_i$ = 0.50913 + 0.01541(Vegas.H.R) + 0.02320(Halftime.H.R)
+P($Y_i = 1$ | X) = $\frac{1}{1+e^{-(0.50913 + 0.01541(Vegas.H.R) + 0.02320(Halftime.H.R))}}$
 
 Therefore, if we wanted to know the fitted probability of the home team winning in the instance that the team is favored by 7 to win and leading by 3 at halftime (Vegas.H.R = 7 and Halftime.H.R = 3), we simply plug in the values 7 and 3 to our equation above:
 
-$y_i$ = 0.50913 + 0.01541(7) + 0.02320(3) = 0.6866
+P($Y_i = 1$ | Vegas.H.R = 7 & Halftime.H.R = 3) = $\frac{1}{1+e^{-(0.50913 + 0.01541(7) + 0.02320(3))}}$ = 0.6652103
 
-### Explain the interpretations of the fitted coeffificnets
+This means the log odds of the home team winning, when Vegas.H.R = 7 and Halftime.H.R = 3, is 0.665
+
+### Explain the interpretations and p-values of the fitted coeffificnets
 
 The interpretation for beta coefficients for multiple logistic regression is slightly different than normal linear regression. Let us interpret the above example: 
 
-- $\beta_0$: When the home team is not favored to win at all (Vega.H.R = 0) and they are not leading at halftime, the log odds of them winning is 0.509
-- $\beta_1$: For every one unit increase in Vega.H.R , the log odds of the home team winning increases by 0.015
-- $\beta_2$: For every one unit increase in Halftime.H.R , the log odds of the home team winning increases by 0.023 
+- $\beta_0$: When the home team is not favored to win at all (Vegas.H.R = 0) and they are not leading at halftime, the log odds of them winning is 0.509
 
-####
-Explain the interpretations for the three approximate z test p values
-####
+The p-value for this beta is not significant, which means we cannot reject the null hypothesis that it is 0. 
 
-####
-Describe the alternative approximate GLR tests
-####
+- $\beta_1$: For every one unit increase in Vega.H.R , holding constant Halftime.H.R ,the log odds of the home team winning increases by 0.015
+- $\beta_2$: For every one unit increase in Halftime.H.R , holding constant Vegas.H.R , log odds of the home team winning increases by 0.023 
 
+The p-value for both $\beta_1$ and $\beta_2$ is less than alpha = 0.05, which means they are statistically significant. This means we can reject their individual null hypotheses that they should be equal to 0. 
+
+### Alternative approximate GLR tests
+We are now going to perform a GLR test comparing our multiple logit model and the model which only uses Halftime.H.R as a predictor. 
+
+max likelihood for multiple logit = -120.38
+max likelihood for Halftime.H.R model = -125.74
+The difference, multiplied by negative 2 gives us: 10.7187431
+
+This statistic acts as a chi-squared distribution with degrees of freedom 1, for the difference in number of parameters between the two models is only 1
+
+The test statistic has a p-value of 0.0011 which is statistically significant at the alpha = 0.05 level. This suggests we can reject the null hypothesis that the beta for Vegas.H.R should be 0
 
 # Sources
 https://towardsdatascience.com/assumptions-of-logistic-regression-clearly-explained-44d85a22b290
