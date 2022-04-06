@@ -191,8 +191,8 @@ Our approximate z-statistic =$\frac{0.27694}{0.15563} = 1.779$ which has a p-val
 The above examples only include one explanatory variable, but now let us walk through an example with multiple variables. 
 
 ```{r multiple_logistic}
-model3 <- glm(response1 ~ Vegas.H.R + Halftime.H.R, data = modeldata, family = "binomial")
-summary(model3)
+model5 <- glm(response1 ~ Vegas.H.R + Halftime.H.R, data = modeldata, family = "binomial")
+summary(model5)
 ```
 
 This results in the following model:
