@@ -89,10 +89,8 @@ model2 <- glm(response1 ~ Halftime.H.R, data = modeldata,family = "binomial")
 summary(model2)
 ```
 
-Let us quickly go through the assumptions: 
-
-(1) The outcome is appropriate, there are two choices
-(2) Linearity of independent variables and log-odds: plot passes for model 1 but not for model 2
+I wanted to quickly show how to check the second asusmption of linearity in case it was not clear above: 
+(2) Linearity of independent variables and log-odds
 ```{r model1_assumption}
 # get predicted values and log odds
 modeldata <- modeldata %>%
@@ -111,7 +109,7 @@ modeldata <- modeldata %>%
   mutate(log_odds_two = log(predicted_values2/(1- predicted_values2))) 
 
 assumption_plot2 <- modeldata %>%
-  ggplot(aes(x = Vegas.H.R, y = log_odds_two)) +
+  ggplot(aes(x = Halftime.H.R, y = log_odds_two)) +
   geom_point() 
 
 assumption_plot2
@@ -119,7 +117,7 @@ assumption_plot2
 
 
 ```{r model2, echo = FALSE, warning = FALSE}
-model3 <- glm(response1 ~ factor(Halftime.H.R), data = modeldata, family = "binomial")
+model3 <- glm(response1 ~ factor(Vegas.H.R), data = modeldata, family = "binomial")
 summary(model3)
 
 model4 <- glm(response1 ~ factor(Halftime.H.R), data = modeldata, family = "binomial")
@@ -193,32 +191,32 @@ Our approximate z-statistic =$\frac{0.27694}{0.15563} = 1.779$ which has a p-val
 The above examples only include one explanatory variable, but now let us walk through an example with multiple variables. 
 
 ```{r multiple_logistic}
-model3 <- glm(response1 ~ Vegas.H.R + Halftime.H.R, data = modeldata)
+model3 <- glm(response1 ~ Vegas.H.R + Halftime.H.R, data = modeldata, family = "binomial")
 summary(model3)
 ```
 
 This results in the following model:
 P($Y_i = 1$ | X) = $\frac{1}{1+e^{-(\beta_0 + \beta_1 X_1 + \beta_2 X_2)}}$
 
-$y_i$ = 0.50913 + 0.01541(Vegas.H.R) + 0.02320(Halftime.H.R)
-P($Y_i = 1$ | X) = $\frac{1}{1+e^{-(0.50913 + 0.01541(Vegas.H.R) + 0.02320(Halftime.H.R))}}$
+$y_i$ = 0.05103 + 0.10072(Vegas.H.R) + 0.16219(Halftime.H.R)
+P($Y_i = 1$ | X) = $\frac{1}{1+e^{-(0.05103 + 0.10072(Vegas.H.R) + 0.16219(Halftime.H.R))}}$
 
 Therefore, if we wanted to know the fitted probability of the home team winning in the instance that the team is favored by 7 to win and leading by 3 at halftime (Vegas.H.R = 7 and Halftime.H.R = 3), we simply plug in the values 7 and 3 to our equation above:
 
-P($Y_i = 1$ | Vegas.H.R = 7 & Halftime.H.R = 3) = $\frac{1}{1+e^{-(0.50913 + 0.01541(7) + 0.02320(3))}}$ = 0.6652103
+P($Y_i = 1$ | Vegas.H.R = 7 & Halftime.H.R = 3) = $\frac{1}{1+e^{-(0.05103 + 0.10072(7) + 0.16219(3))}}$ = 0.2239768
 
-This means the log odds of the home team winning, when Vegas.H.R = 7 and Halftime.H.R = 3, is 0.665
+This means the log odds of the home team winning, when Vegas.H.R = 7 and Halftime.H.R = 3, is 0.2239768
 
 ### Explain the interpretations and p-values of the fitted coeffificnets
 
 The interpretation for beta coefficients for multiple logistic regression is slightly different than normal linear regression. Let us interpret the above example: 
 
-- $\beta_0$: When the home team is not favored to win at all (Vegas.H.R = 0) and they are not leading at halftime, the log odds of them winning is 0.509
+- $\beta_0$: When the home team is not favored to win at all (Vegas.H.R = 0) and they are not leading at halftime, the log odds of them winning is 0.05103
 
 The p-value for this beta is not significant, which means we cannot reject the null hypothesis that it is 0. 
 
-- $\beta_1$: For every one unit increase in Vega.H.R , holding constant Halftime.H.R ,the log odds of the home team winning increases by 0.015
-- $\beta_2$: For every one unit increase in Halftime.H.R , holding constant Vegas.H.R , log odds of the home team winning increases by 0.023 
+- $\beta_1$: For every one unit increase in Vega.H.R , holding constant Halftime.H.R ,the log odds of the home team winning increases by 0.10072
+- $\beta_2$: For every one unit increase in Halftime.H.R , holding constant Vegas.H.R , log odds of the home team winning increases by 0.16219 
 
 The p-value for both $\beta_1$ and $\beta_2$ is less than alpha = 0.05, which means they are statistically significant. This means we can reject their individual null hypotheses that they should be equal to 0. 
 
@@ -231,7 +229,7 @@ The difference, multiplied by negative 2 gives us: 10.7187431
 
 This statistic acts as a chi-squared distribution with degrees of freedom 1, for the difference in number of parameters between the two models is only 1
 
-The test statistic has a p-value of 0.0011 which is statistically significant at the alpha = 0.05 level. This suggests we can reject the null hypothesis that the beta for Vegas.H.R should be 0
+The test statistic has a p-value of 0.0011 which is statistically significant at the alpha = 0.05 level. This suggests we can reject the null hypothesis that the beta for Vegas.H.R should be 0. This also tells us that our multiple logit regression is a better estimate than the model which only uses halftime as a predictor. 
 
 # Sources
 https://towardsdatascience.com/assumptions-of-logistic-regression-clearly-explained-44d85a22b290
