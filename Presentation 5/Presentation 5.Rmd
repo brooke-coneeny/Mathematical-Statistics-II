@@ -20,34 +20,25 @@ footballdata <- read.table("NFL2010_pres5.txt", head = T, sep = ",")
 
 # Background Information
 
-As we know, the objective of Bayesian data analysis is to determine the posterior distribution given the prior distribution and likelihood distribution. 
+As we know, the objective of Bayesian data analysis is to determine the posterior distribution given the prior distribution and likelihood distribution for the data. 
 
-Markov Chain Monte Carlo methods allow us to estimate the shape of a posterior distribution in case we cannot compute it directly. In other words, MCMC methods are used to approximate the posterior distribution of a paramter of interest by random sampling in a probablistic space 
+Markov Chain Monte Carlo methods allow us to estimate the shape of a posterior distribution in case we cannot compute it directly. In other words, MCMC methods are used to approximate the posterior distribution for a parameter of interest by random sampling in a probabilistic space 
 
+Monte Carlo simulations are a way of estimating a fixed parameter by repeatedly generating random numbers.
 
-Monte Carlo simulations are a way of estimating a fixed parameter by repeatedly generating random numbers
+Markov Chains are sequences of events that are probabilistically related to one another. Each event comes from a set of outcomes, and each outcome determines which outcome occurs next, according to a fixed set of probabilities. An important feature of Markov Chains is that they are memoryless, meaning that no new information comes from knowing the history of past events. 
 
-Markov Chains are sequences of events that are probabilistically related to one another. Each event comes from a set of outcomes, and each outcome determines which outcome occurs next, according to a fixed set of probabilities. An important feature of Markov Chains is that they are memoryless, meaning everything that no new information comes from knowing the history of events
-
-Using the MCMC method, we draw samples from the posterior distribution, and then compute statistics on the samples drawn. We then compare the values of parameters by computing how likely each value is to explain the data, given our prior beliefs. If a randomly generated parameter value is better than the last one, it is added to the chain of parameter values with a certain probability determined by how much better it is.
+Using the MCMC method, we form a posterior distribution from sampling, and then compute statistics from the sample. 
 
 # Gibbs Sampling 
 Gibbs Sampling is used when the joint distribution is not known explicitly or is difficult to sample from directly, but the conditional distribution of each variable is known and easier to sample from. 
 
-Suppose we have a vector of parameters $\theta = (\theta_1 , \theta_2, ..., \theta_k)$ and we want to estimate the joint posterior distribution $p(\theta | X)$. 
+For this method, the Markov Chain is constructed by sampling from the conditional distribution for each parameter, conditional on the current values of the other parameters. Once we have iterated over all parameters, we completed one cycle of the Gibbs sampler.
 
-Suppose we can find and draw random samples from all of the conditional distributions:
-$p(\theta_1 | \theta_2 , ...,\theta_k,X)$
-$p(\theta_2 | \theta_1 , ...,\theta_k,X)$
-$...$
-$p(\theta_k | \theta_1 , \theta_2,...,X)$
-
-For this method, the Markov Chain is constructed by sampling from the conditional distribution for each parameter $\theta_i$, conditional on the current values of the other variables. Once we have iterated over all parameters, we completed one cycle of the Gibbs sampler.
-
-## Gibbs Sampling for Probit Distribution 
+# Gibbs Sampling for Probit Distribution 
 We can use this MCMC method to carry out Bayesian inference for the Probit regression model. Instead of plugging in the MLE for the coefficient $\beta$, we assume prior distribution on $\beta$ and simulate from its posterior distribution. 
 
-Recall that the Probit model may be expressed in terms of a latent variable $ \theta_i = X^{T}_{i} \beta + Z_i $, where $ Z_i \overset{iid}\sim N(0,1) $
+Recall that the Probit model may be expressed in terms of a latent variable $\theta_i = X^{T}_{i} \beta + Z$, where $Z_{i} \overset{iid}\sim N(0,1)$ 
 
 We observe $Y_i = 1$ if $\theta_i \geq 0$ and $Y_i = 0$ otherwise, for $i = 1,...,n$. Then $P(Y_i = 1 | \beta) = \phi (X_{i}\beta)$. The non-informative prior $p(\beta) \propto c$ results in a posterior distribution that is proportional to the likelihood function.
 
@@ -67,14 +58,15 @@ modeldata <- footballdata %>%
 ```
 
 The code for the algorithm is as follows: 
-```{r demonstration, echo = FALSE}
+```{r demonstration, echo = TRUE, results = 'hide'}
 # initialize parameters 
 x = modeldata$Halftime.H.R
-X = cbind(1,x) # m by 2 covariate matrix 
+X = cbind(1,x) # covariate matrix 
 y = modeldata$response1
 theta = 0*y
 V = solve(t(X)%*%{X})
 rtV = t(chol(V)) 
+nsim = 10000
 
 # when y is zero want thetas negative
 theta[y == 0] = qnorm(runif(sum(y==0), 0, 0.5))
@@ -82,10 +74,10 @@ theta[y == 0] = qnorm(runif(sum(y==0), 0, 0.5))
 theta[y == 1] = qnorm(runif(sum(y==1), 0.5, 1))
 
 # will store the beta values 
-sampleBetas = matrix(0,ncol = 2, nrow = 100)
+sampleBetas = matrix(0,ncol = 2, nrow = nsim)
 
-# for 100 iterations 
-for (i in 1:100) {
+# for nsim iterations 
+for (i in 1:nsim) {
   # sample each parameter from its conditional dist
   # for beta 
   Betahat = V%*%t(X)%*%theta
@@ -103,20 +95,14 @@ for (i in 1:100) {
 sampleBetas
 ```
 
-Not that we have out sample of Betas we can see positive correlation between successive values: 
-
-```{r correlated}
-cor(sampleBetas[-1,2], sampleBetas[-100,2])
-```
-
 As you can see with these two plots, we get distributions for each of the Betas
 ```{r histograms}
-# historgram of output
+# histogram of output
 hist(sampleBetas[,1])
 hist(sampleBetas[,2])
 ```
 
-### Posterior mean VS MLE
+## Posterior mean VS MLE
 
 The posterior mean estimate can now be found by taking the average of the sample $\beta$'s
 
@@ -135,13 +121,13 @@ summary(probit_model)
 # Interval Estimates
 One advantage of Bayesian probit regression is that it is easy to generate interval estimates for the success probabilities. Each simulated $\beta$ implies a probability, and you can find the middle 95% of the simulated probabilities for each $x_i$ to represent 95% credible intervals. 
 
-We can generate a graph of the probability curve vs. $x$ with 95% interval estimates drawn in. As we can see, the interval bounds differs based on the lead becoming wider as the and narrower at different parts. 
+We can generate a graph of the probability curve vs. $x$ with 95% interval estimates drawn in. As we can see, the interval bounds differs based on the home team's lead at halftime. The interval is wider when the game is still close and narrower when the lead is large.  
 
 ```{r probabilities}
 xGrid = seq(-30,30,0.5)
-probMap = matrix(0, ncol = length(xGrid), nrow = 100)
+probMap = matrix(0, ncol = length(xGrid), nrow = nsim)
 
-for (i in 1:100){
+for (i in 1:nsim){
   for (j in 1:length(xGrid)){
       # regression line with the estimates 
       mu = sampleBetas[i,1] + xGrid[j]*sampleBetas[i,2]
@@ -162,9 +148,14 @@ lines(xGrid, lower025)
 lines(xGrid, upper975)
 ```
 
-If we wanted to report a 95% posterior interval for the probability that a home team will win if they have a 7 lead at halftime, we could use the plot we created above. The red line denotes when the halftime margin is 7. The value at this point represents the probability the home team is going to win given their lead at halftime is 7 points. 
+If we wanted to report a 95% posterior interval for the probability that a home team will win if they have a 7 point lead at halftime, we could use the plot we created above. The red line denotes when the halftime margin is 7. The interval represents the probability the home team is going to win given their lead at halftime is 7 points, which is between 0.001 and 0.038. This means there is between about a 1-3% chance the home team wins if they have  7 point lead at half time. 
 
 ```{r example}
+lower_bound = lower025[7]
+upper_bound = upper975[7]
+lower_bound
+upper_bound
+
 plot(xGrid, meanP, ylim = c(0,1))
 lines(xGrid, lower025)
 lines(xGrid, upper975)
@@ -176,16 +167,16 @@ The improper prior distribution for $\beta$ will not give a proper posterior dis
 
 The likelihood for the $\beta$'s heads towards 1 as the betas go towards infinity. Because the function never reaches exactly 1, there is not finite area underneath the curve, meaning there is no guarantee the likelihood can be normalized.
 
-A $N_2(0,I)$ prior distribution (or any other proper distribution) for $\beta$ will yield a proper posterior distribution with these data. This is because any proper prior will combine with a likelihood function and give us a proper posterior distribution. Proper prior distributions lead to proper joint distributions and therefore proper posterior distributions. 
+A $N_2(0,I)$ prior distribution (or any other proper distribution) for $\beta$ will yield a proper posterior distribution with these data. This is because any proper prior will combine with a likelihood function and give us a proper posterior distribution. Therefore, it can be known that proper prior distributions lead to proper joint distributions and therefore proper posterior distributions. 
 
 ### Meaningful Draws
-The Gibbs sampler from part c will generate draws, but not meaningful draws (which is dangerous). These draws are not meaningful because the joint posterior is not defined. Using improper prior distributions as done above is therefore risky
+The Gibbs sampler from part c will generate draws, but not meaningful draws (which is dangerous). These draws are not meaningful because the joint posterior is not defined. Using improper prior distributions as done above is therefore risky. 
 
 ### Example
 Now we are going to quickly run a Gibbs sampler and report posterior mean and variance estimates for $\beta$ using $x = c(-2,-1,0,1,2)$ and $y = c(0,0,0,1,1)$. 
 
 The code for the algorithm is as follows: 
-```{r demonstration2}
+```{r demonstration2, echo = TRUE, results = 'hide'}
 # initialize parameters 
 x = c(-2,-1,0,1,2)
 X = cbind(1,x) # m by 2 covariate matrix 
@@ -193,6 +184,7 @@ y = c(0,0,0,1,1)
 theta = 0*y
 V = solve(t(X)%*%{X})
 rtV = t(chol(V)) 
+nsim = 10000
 
 # when y is zero want thetas negative
 theta[y == 0] = qnorm(runif(sum(y==0), 0, 0.5))
@@ -200,10 +192,10 @@ theta[y == 0] = qnorm(runif(sum(y==0), 0, 0.5))
 theta[y == 1] = qnorm(runif(sum(y==1), 0.5, 1))
 
 # will store the beta values 
-sampleBetas = matrix(0,ncol = 2, nrow = 100)
+sampleBetas = matrix(0,ncol = 2, nrow = nsim)
 
 # for 100 iterations 
-for (i in 1:100) {
+for (i in 1:nsim) {
   # sample each parameter from its conditional dist
   # for beta 
   Betahat = V%*%t(X)%*%theta
@@ -232,12 +224,11 @@ hist(sampleBetas[,2])
 apply(sampleBetas, 2, mean)
 ```
 
-
 ```{r probabilities2}
 xGrid = seq(-30,30,0.5)
-probMap = matrix(0, ncol = length(xGrid), nrow = 100)
+probMap = matrix(0, ncol = length(xGrid), nrow = nsim)
 
-for (i in 1:100){
+for (i in 1:nsim){
   for (j in 1:length(xGrid)){
       # regression line with the estimates 
       mu = sampleBetas[i,1] + xGrid[j]*sampleBetas[i,2]
@@ -257,10 +248,6 @@ plot(xGrid, meanP, ylim = c(0,1))
 lines(xGrid, lower025)
 lines(xGrid, upper975)
 ```
-
-#####
-should show chaotic behavior with histogram and plot betas against iteration number 
-#####
 
 # Sources
 
