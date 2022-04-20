@@ -38,13 +38,21 @@ For this method, the Markov Chain is constructed by sampling from the conditiona
 # Gibbs Sampling for Probit Distribution 
 We can use this MCMC method to carry out Bayesian inference for the Probit regression model. Instead of plugging in the MLE for the coefficient $\beta$, we assume prior distribution on $\beta$ and simulate from its posterior distribution. 
 
-Recall that the Probit model may be expressed in terms of a latent variable $\theta_i = X^{T}_{i} \beta + Z$, where $Z_{i} \overset{iid}\sim N(0,1)$ 
+Recall that the Probit model may be expressed in terms of a latent variable $\theta_i = X^{T}_{i} \beta + Z$, where $Z_{i} \overset{iid}\sim N(0,1)$. This is a Normal linear regression model for the $\theta_i$'s with $\sigma = 1$ given. 
 
-We observe $Y_i = 1$ if $\theta_i \geq 0$ and $Y_i = 0$ otherwise, for $i = 1,...,n$. Then $P(Y_i = 1 | \beta) = \phi (X_{i}\beta)$. The non-informative prior $p(\beta) \propto c$ results in a posterior distribution that is proportional to the likelihood function.
+Note that if $\theta_i \geq 0$ then $Y_i = 1$, otherwise $Y_i = 0$ for $i = 1,...,n$
+
+The form of the probit model probability function is as follows: $P(Y_i = 1 | \beta) = \phi (X_{i}\beta)$. Note that is also follows the latent variable representation. 
+
+Given the Normal linear regression model for the $\theta_i$'s the conditional distribution for $\beta | Y, \theta$. 
+
+The non-informative prior $p(\beta) \propto c$ results in a posterior distribution that is proportional to the likelihood function.
 
 In this example, our conditional distributions are: 
 $\beta | \theta , Y \phi N_{p}((X^{T}X)^{-1}X^{T}\theta , (X^{T}X)^{-1})$
 $\theta_i | \beta , Y_i \phi N(X_{i}^{T}\beta, 1)$
+
+Note that these are both draws from Normals which are forced to be the correct sign, determined by the $Y_i$'s (positive if $Y=1$ and negative if $Y=0$). 
 
 # Gibbs Sampling Demonstration
 We are going to use the NFL home wins and losses data, using halftime margin as an explanatory variable. This results in two parameters, $\beta_0$ and $\beta_1$. 
@@ -85,6 +93,8 @@ for (i in 1:nsim) {
   # for theta 
   mu = X%*%Beta
   z = 0*mu
+  # apply inverse CDF to a random unif resulting in a random value, restricting 
+  # the uniform range restricts range of the resulting variable 
   z[y==0] = qnorm(runif(sum(y==0), 0,pnorm(-mu[y==0])))
   z[y==1] = qnorm(runif(sum(y==1),pnorm(-mu[y==1]),1))
   theta = mu + z
@@ -111,10 +121,10 @@ The posterior mean estimate can now be found by taking the average of the sample
 apply(sampleBetas, 2, mean)
 ```
 
-The MLE values for the $\beta$'s can be found in the output table after running a general linear model. Comparing these values to the posterior mean estimates we can see they are similar estimates.  
+The MLE values for the $\beta$'s can be found in the output table after running a general linear model. Comparing these values to the posterior mean estimates we can see they are almost exactly the same estimates.  
 
 ```{r model}
-probit_model <- glm(response1 ~ Halftime.H.R, data = modeldata,family = "binomial")
+probit_model <- glm(response1 ~ Halftime.H.R, data = modeldata, family = "binomial"(link = "probit"))
 summary(probit_model)
 ```
 
@@ -151,8 +161,8 @@ lines(xGrid, upper975)
 If we wanted to report a 95% posterior interval for the probability that a home team will win if they have a 7 point lead at halftime, we could use the plot we created above. The red line denotes when the halftime margin is 7. The interval represents the probability the home team is going to win given their lead at halftime is 7 points, which is between 0.001 and 0.038. This means there is between about a 1-3% chance the home team wins if they have  7 point lead at half time. 
 
 ```{r example}
-lower_bound = lower025[7]
-upper_bound = upper975[7]
+lower_bound = lower025[75]
+upper_bound = upper975[75]
 lower_bound
 upper_bound
 
@@ -165,7 +175,11 @@ abline(v = 7, col = "red")
 # Improprt Prior Distributions & Proper Posterior Distributions 
 The improper prior distribution for $\beta$ will not give a proper posterior distribution for data that exhibit perfect separation. If there is perfect separation, y is 0 on one side of a threshold and 1 on the other, creating a step function. 
 
-The likelihood for the $\beta$'s heads towards 1 as the betas go towards infinity. Because the function never reaches exactly 1, there is not finite area underneath the curve, meaning there is no guarantee the likelihood can be normalized.
+The maximum possibly value for any likelihood function with discrete data is 1, which is achieved only if you can make the probability of the data be 1. It is possible to do this but only in a limit. For our data, the probability increases with x. The curve of the probit probability curve is shaped similar to an S. 
+
+However, as the slope parameter increases it becomes close to a step shape. This happens because the intercept will decrease to compensate and keep the curve near 0 on one side of the threshold (where $Y = 0$) and near 1 on the other side of the threshold (where $Y = 1$). The closer this function gets to the step, the fitted probability (the value of the likelihood function) of the $Y_i$'s get closer to 1. This means that the likelihood function continues to increase towards 1 as $\beta_1 \rightarrow \infty$ and $\beta_0 \rightarrow -\infty$. 
+
+Given a constant prior, the posterior density is proportional to the joint likelihood function. If this likelihood function is increasing in its limitis, it cannot be normalized to a joint density function. Therefore, the constant prior is convenient, but when using an improper prior, we have to verify that the posterior will be proper. 
 
 A $N_2(0,I)$ prior distribution (or any other proper distribution) for $\beta$ will yield a proper posterior distribution with these data. This is because any proper prior will combine with a likelihood function and give us a proper posterior distribution. Therefore, it can be known that proper prior distributions lead to proper joint distributions and therefore proper posterior distributions. 
 
@@ -173,81 +187,52 @@ A $N_2(0,I)$ prior distribution (or any other proper distribution) for $\beta$ w
 The Gibbs sampler from part c will generate draws, but not meaningful draws (which is dangerous). These draws are not meaningful because the joint posterior is not defined. Using improper prior distributions as done above is therefore risky. 
 
 ### Example
-Now we are going to quickly run a Gibbs sampler and report posterior mean and variance estimates for $\beta$ using $x = c(-2,-1,0,1,2)$ and $y = c(0,0,0,1,1)$. 
+Now we are going to quickly run a Gibbs sampler and report posterior mean and variance estimates for $\beta$ using $x = c(-2,-1,0,1,2)$ and $y = c(0,0,0,1,1)$. This is an example of perfectly separated data. 
 
 The code for the algorithm is as follows: 
 ```{r demonstration2, echo = TRUE, results = 'hide'}
 # initialize parameters 
-x = c(-2,-1,0,1,2)
-X = cbind(1,x) # m by 2 covariate matrix 
-y = c(0,0,0,1,1)
-theta = 0*y
-V = solve(t(X)%*%{X})
-rtV = t(chol(V)) 
-nsim = 10000
+x_2 = c(-2,-1,0,1,2)
+X_2 = cbind(1,x_2) # m by 2 covariate matrix 
+y_2 = c(0,0,0,1,1)
+theta_2 = 0*y_2
+V_2 = solve(t(X_2)%*%{X_2})
+rtV_2 = t(chol(V_2)) 
+nsim_2 = 10000
 
 # when y is zero want thetas negative
-theta[y == 0] = qnorm(runif(sum(y==0), 0, 0.5))
+theta_2[y_2 == 0] = qnorm(runif(sum(y_2==0), 0, 0.5))
 # when y is 1 want thetas positives
-theta[y == 1] = qnorm(runif(sum(y==1), 0.5, 1))
+theta_2[y_2 == 1] = qnorm(runif(sum(y_2==1), 0.5, 1))
 
 # will store the beta values 
-sampleBetas = matrix(0,ncol = 2, nrow = nsim)
+sampleBetas_2 = matrix(0,ncol = 2, nrow = nsim_2)
 
 # for 100 iterations 
-for (i in 1:nsim) {
+for (i in 1:nsim_2) {
   # sample each parameter from its conditional dist
   # for beta 
-  Betahat = V%*%t(X)%*%theta
-  Beta = Betahat+rtV%*%rnorm(2) # taking V ^1/2 times Z is distributed as N(0,V)
+  Betahat_2 = V_2%*%t(X_2)%*%theta_2
+  Beta_2 = Betahat_2+rtV_2%*%rnorm(2) # taking V ^1/2 times Z is distributed as N(0,V)
   # for theta 
-  mu = X%*%Beta
-  z = 0*mu
-  z[y==0] = qnorm(runif(sum(y==0), 0,pnorm(-mu[y==0])))
-  z[y==1] = qnorm(runif(sum(y==1),pnorm(-mu[y==1]),1))
-  theta = mu + z
+  mu_2 = X_2%*%Beta_2
+  z_2 = 0*mu_2
+  z_2[y_2==0] = qnorm(runif(sum(y_2==0), 0,pnorm(-mu_2[y_2==0])))
+  z_2[y_2==1] = qnorm(runif(sum(y_2==1),pnorm(-mu_2[y_2==1]),1))
+  theta_2 = mu_2 + z_2
   # add sample betas to matrix
-  sampleBetas[i,] = Beta # putting the values of betas in the i'th row of the matrix 
+  sampleBetas_2[i,] = Beta_2 # putting the values of betas in the i'th row of the matrix 
 }
 
-sampleBetas
+# beta 1 values plotted against iteration number for both separated and NFL
+plot(sampleBetas_2[,2], type = 'b')
+plot(sampleBetas[,2], type = 'b')
 ```
 
-```{r histograms2}
-# historgram of output
-hist(sampleBetas[,1])
-hist(sampleBetas[,2])
-```
-
-```{r means2}
-# getting the means for both Beta 0 and Beta 1
-apply(sampleBetas, 2, mean)
-```
-
-```{r probabilities2}
-xGrid = seq(-30,30,0.5)
-probMap = matrix(0, ncol = length(xGrid), nrow = nsim)
-
-for (i in 1:nsim){
-  for (j in 1:length(xGrid)){
-      # regression line with the estimates 
-      mu = sampleBetas[i,1] + xGrid[j]*sampleBetas[i,2]
-      probMap[i,j] = pnorm(mu) 
-  }
-}
-
-# get the lower 5 percent of samples
-lower025 = apply(probMap, 2, quantile, 0.025)
-# get the upper 5 percent of values 
-upper975 = apply(probMap, 2, quantile, 0.975)
-
-
-meanP = apply(probMap, 2, mean)
-
-plot(xGrid, meanP, ylim = c(0,1))
-lines(xGrid, lower025)
-lines(xGrid, upper975)
-```
+Things to note about this example:
+- The results, due to the perfect separation in the data, are not summarizing a proper distribution.
+- The draws were not meaningful because they are not coming from any fixed distribution. 
+- In the plot of $\beta_1$ vs iteration, we can see the values are continuing to get larger and are not settling into a stable distribution for the separated data set. This is different than the sloped for the NFL data, which vary steadily around 0.09
 
 # Sources
 
